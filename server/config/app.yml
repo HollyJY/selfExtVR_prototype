@@ -1,6 +1,6 @@
 stt:
-  device: cpu            # cpu or cuda
-  model_size: small      # tiny base small medium large
+  device: cpu             # cpu or cuda
+  model_size: base.en     # tiny base small medium large
   vad: true
 
 llm:
