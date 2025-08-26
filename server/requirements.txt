@@ -1,0 +1,15 @@
+flask==3.0.3
+numpy
+soundfile
+openai-whisper
+# Alternatively use faster-whisper if you prefer
+# faster-whisper
+
+# LLM
+transformers
+accelerate
+bitsandbytes
+
+# Replace this with the actual IndexTTS package or your local path
+# indextts
+pyyaml

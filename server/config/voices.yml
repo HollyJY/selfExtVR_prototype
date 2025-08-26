@@ -1,0 +1,5 @@
+voices:
+  npc_barista_friendly:
+    description: Warm approachable voice suitable for casual dialogues
+  npc_robotic_neutral:
+    description: Neutral robotic voice for competence framing

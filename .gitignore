@@ -1,0 +1,9 @@
+server/__pycache__/
+__pycache__/
+*.pyc
+.DS_Store
+server/data/sessions/
+server/data/exports/
+server/logs/
+server/models/
+server/data/

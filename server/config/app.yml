@@ -1,0 +1,30 @@
+stt:
+  device: cpu            # cpu or cuda
+  model_size: small      # tiny base small medium large
+  vad: true
+
+llm:
+  device: cuda
+  model_name: Llama-3-8B-Instruct
+  precision: 4bit        # 4bit 8bit fp16
+
+tts:
+  device: cpu            # switch to cuda if needed
+  voice: npc_barista_friendly
+  sample_rate: 48000
+  format: wav
+
+http:
+  stt_port: 7001
+  llm_port: 7002
+  tts_port: 7003
+
+paths:
+  data_root: /workspace/data
+  sessions_dir: /workspace/data/sessions
+  exports_dir: /workspace/data/exports
+  logs_dir: /workspace/logs
+
+locks:
+  enable_gpu_lock: true
+  lock_path: /workspace/data/.gpu.lock
