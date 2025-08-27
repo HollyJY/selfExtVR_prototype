@@ -1,41 +1,43 @@
-import os, io, json
-# from services.stt_app import app
+import io
+from services.stt_app import app
 
-# easy test for whisper model
-import whisper
-
-def test_stt_smoke(tmp_path):
+def test_stt_smoke():
     client = app.test_client()
-    wav_bytes = b'RIFF0000WAVEfmt '
+    # wav_bytes = b'RIFF0000WAVEfmt '  # simulate a simple WAV file header
     data = {
         'session_id': 'demo-session',
         'trial_id': '1',
-        'lang': 'auto',
-        'audio': (io.BytesIO(wav_bytes), 'user_1B_mic.wav')
+        'lang': 'en',
+        'audio': open('/workspace/tests/test_data/0_sample_audio/sample_zjy.wav', 'rb') # testing a real audio file
     }
     resp = client.post('/api/v1/stt', data=data, content_type='multipart/form-data')
-    assert resp.status_code == 200
+    assert resp.status_code == 200  # check HTTP response status code
     j = resp.get_json()
-    assert 'asr_text_path' in j
+    assert 'asr_text_path' in j  # check if the response contains the expected key
 
 if __name__ == '__main__':
-    import time
+    test_stt_smoke()
 
-    # simple test of whisper model
-    INPUT_FOLDER_STT = 'server/tests/test_data/0_sample_audio'
-    OUTPUT_FOLDER_STT = 'server/tests/test_data/1_output_stt'
-    input_audio_path = os.path.join(INPUT_FOLDER_STT, 'sample_zjy.mp3')
+# if __name__ == '__main__':
+#     import os, requests
 
-    start_time = time.time()
+#     # start flask app in a separate process
+#     p = Process(target=run_flask_app)
+#     p.start()
 
-    # download the model to server/models/whisper
-    model = whisper.load_model("base.en", download_root="./server/models/whisper")
-    
-    # run the model
-    result = model.transcribe(input_audio_path, language='en', fp16=False)
+#     # wait for server to run
+#     import time
+#     time.sleep(2)
 
-    # save the result
-    with open(os.path.join(OUTPUT_FOLDER_STT, 'sample_zjy_whisper.txt'), 'w') as f:
-        f.write(result['text'] + '\n')
-    print(result['text'], '\n')
-    print(f"whisper STT done in {time.time() - start_time} seconds\n\n")
+#     SERVER = "http://127.0.0.1:7001"  # or internal IP
+#     INPUT_AUDIO = "tests/test_data/0_sample_audio/sample_zjy.mp3"
+
+#     resp = requests.post(
+#         f"{SERVER}/api/v1/stt",
+#         files={"audio": open(INPUT_AUDIO, "rb")},
+#         data={"session_id": "demo-session", "trial_id": "000", "lang": "en"}
+#     )
+#     print(resp.text)  # 打印原始响应内容
+#     print(resp.json())
+
+#     p.terminate()

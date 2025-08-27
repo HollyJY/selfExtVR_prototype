@@ -24,6 +24,7 @@ paths:
   sessions_dir: /workspace/data/sessions
   exports_dir: /workspace/data/exports
   logs_dir: /workspace/logs
+  models_root: /workspace/models
 
 locks:
   enable_gpu_lock: true
