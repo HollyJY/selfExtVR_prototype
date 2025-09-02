@@ -1,4 +1,9 @@
-import io
+import sys
+
+workspace_path = '/workspace'
+if workspace_path not in sys.path:
+    sys.path.insert(0, workspace_path)
+
 from services.stt_app import app
 
 def test_stt_smoke():
