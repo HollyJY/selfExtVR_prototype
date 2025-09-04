@@ -7,17 +7,28 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     HF_HOME=/workspace/.cache/hf \
     TRANSFORMERS_CACHE=/workspace/.cache/hf \
-    HUGGINGFACE_HUB_CACHE=/workspace/.cache/hf
+    HUGGINGFACE_HUB_CACHE=/workspace/.cache/hf \
+    OLLAMA_HOST=0.0.0.0:11434 \
+    OLLAMA_MODELS=/workspace/models/llama \
+    NVIDIA_VISIBLE_DEVICES=all \
+    NVIDIA_DRIVER_CAPABILITIES=compute,utility
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     software-properties-common && \
     add-apt-repository universe && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-    python3 python3-pip ffmpeg git curl supervisor && \
+    python3 python3-pip ffmpeg git curl supervisor ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace
+
+## 2) Install Ollama (for local LLM serving)
+# Note: Requires network at build time. Installs /usr/local/bin/ollama
+RUN curl -fsSL https://ollama.com/install.sh | sh
+
+# Ensure model cache directory exists (and is mountable as a volume if desired)
+RUN mkdir -p ${OLLAMA_MODELS}
 
 COPY requirements.txt ./
 RUN python3 -m pip install --upgrade pip \
@@ -33,7 +44,10 @@ COPY config/ ./config/
 RUN mkdir -p data/sessions data/exports logs
 
 COPY supervisor.conf ./
+COPY docker-entrypoint.sh ./
+RUN chmod +x /workspace/docker-entrypoint.sh
 
-EXPOSE 7001 7002 7003
+EXPOSE 7001 7002 7003 11434
 
+ENTRYPOINT ["/workspace/docker-entrypoint.sh"]
 CMD ["/usr/bin/supervisord", "-c", "/workspace/supervisor.conf"]

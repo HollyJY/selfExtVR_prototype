@@ -8,7 +8,7 @@ openai-whisper
 # LLM
 # transformers
 # accelerate
-bitsandbytes
+requests>=2.31.0
 
 # Replace this with the actual IndexTTS package or your local path
 # indextts

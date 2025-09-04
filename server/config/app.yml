@@ -25,6 +25,8 @@ paths:
   exports_dir: /workspace/data/exports
   logs_dir: /workspace/logs
   models_root: /workspace/models
+  # ollama_models_dir: /workspace/models/llama   # Optional: Ollama models dir. Defaults to "{models_root}/llama" if unset.
+  # hf_cache_dir: /workspace/models/hf-cache     # Optional: Hugging Face cache dir (HF_HOME/TRANSFORMERS_CACHE).
 
 locks:
   enable_gpu_lock: true
