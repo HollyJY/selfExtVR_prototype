@@ -13,7 +13,7 @@ def test_tts_smoke():
     session_id = 'demo-session'
     trial_id = 1
     paths = ensure_trial_paths(session_id, trial_id)
-    ref_audio_path = os.path.abspath(os.path.join(paths['trial_dir'], 'meta', 'sample_voice.wav'))
+    ref_audio_path = os.path.abspath(os.path.join(paths['meta_dir'], 'sample_voice.wav'))
     text_path = os.path.abspath(os.path.join(paths['trial_dir'], 'user_2B_llm.txt'))
 
     payload = {

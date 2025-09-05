@@ -24,11 +24,13 @@ def run_pipeline(session_id: str = 'demo-session', trial_id: int = 1):
 
     # 1) STT
     stt_start = time.perf_counter()
+    # Build trial paths to locate the sample voice under the trial folder meta
+    trial_paths = ensure_trial_paths(session_id, trial_id)
     stt_data = {
         'session_id': session_id,
         'trial_id': str(trial_id),
         'lang': 'en',
-        'audio': open('/workspace/tests/test_data/0_sample_audio/sample_zjy.wav', 'rb')
+        'audio': open(os.path.abspath(os.path.join(trial_paths['trial_dir'], 'user_1B_mic.wav')), 'rb')
     }
     stt_resp = stt_client.post('/api/v1/stt', data=stt_data, content_type='multipart/form-data')
     assert stt_resp.status_code == 200, f"STT HTTP {stt_resp.status_code}: {stt_resp.data!r}"
@@ -57,8 +59,7 @@ def run_pipeline(session_id: str = 'demo-session', trial_id: int = 1):
     # Absolute text path from the LLM result (returned relative to data/)
     text_abs_path = os.path.abspath(os.path.join('data', llm_rel_path))
     # Absolute ref audio under the trial meta directory
-    trial_paths = ensure_trial_paths(session_id, trial_id)
-    ref_abs_path = os.path.abspath(os.path.join(trial_paths['trial_dir'], 'meta', 'sample_voice.wav'))
+    ref_abs_path = os.path.abspath(os.path.join(trial_paths['meta_dir'], 'sample_voice.wav'))
     tts_payload = {
         'session_id': session_id,
         'trial_id': trial_id,
@@ -78,7 +79,7 @@ def run_pipeline(session_id: str = 'demo-session', trial_id: int = 1):
 def main():
     # Optionally, ensure no external servers are running; here we use Flask test clients,
     # so everything runs sequentially in-process ("挂起所有服务"的要求在此天然满足)。
-    t = run_pipeline()
+    t = run_pipeline(session_id = 'session-abdo', trial_id=1)
     print(f"STT: {t['stt_sec']:.3f}s | LLM: {t['llm_sec']:.3f}s | TTS: {t['tts_sec']:.3f}s | TOTAL: {t['total_sec']:.3f}s")
 
 

@@ -90,8 +90,8 @@ def llm():
         tmpl = ''
         log.warning(f"Prompt template not found or unreadable at {prompt_tmpl_path}: {e}")
 
-    # Read scene text from session meta (e.g., .../sessions/<session>_session/meta/scene.txt)
-    scene_path = os.path.join(paths['meta_dir'], 'scene.txt')
+    # Read scene text from session meta (e.g., .../sessions/<session>_session/trial_<trial_id>/scene.txt)
+    scene_path = os.path.join(paths['trial_dir'], 'scene.txt')
     try:
         with open(scene_path, 'r', encoding='utf-8') as f:
             scene_text = f.read().strip()
