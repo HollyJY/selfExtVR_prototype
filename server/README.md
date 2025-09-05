@@ -44,13 +44,13 @@ project/
 
 ## Build
 ```bash
-cd project
-docker build -t hci-audio-llm:dev .
+docker build -t extselfvr:ollama server
 ```
 
 ## Run
+run in bash, testing
 ```bash
-docker run --gpus all --rm \      -p 7001:7001 -p 7002:7002 -p 7003:7003 \      -v $(pwd)/data:/workspace/data \      hci-audio-llm:dev
+docker run -it --rm --gpus all -p 7001 -p 7002 -p 7003 -p 11434 -v "$(pwd)/server:/workspace" extselfvr:ollama bash
 ```
 
 ## Endpoints
