@@ -101,14 +101,29 @@ def _resolve_text(paths: dict, payload: dict) -> str:
     return "Hello, this is a test."
 
 def _resolve_ref_path(paths: dict, payload: dict) -> str:
-    # Allow client to pass a ref path; else fall back to bundled sample audio
-    # should be under current session folder/meta/
+    """Resolve reference audio path.
+    Supports absolute paths directly; otherwise tries several candidates under the session.
+    Falls back to bundled sample if nothing exists.
+    """
     ref = (payload or {}).get("ref_path")
     if ref:
-        # If not already under data, accept as given as absolute or relative
-        if ref.startswith('data' + os.sep):
+        # Absolute path accepted as-is if it exists
+        if os.path.isabs(ref) and os.path.isfile(ref):
             return ref
-        return os.path.join(paths['base'], ref)
+
+        # Try a set of likely locations for relative inputs
+        candidates = [ref]
+        if ref.startswith('data' + os.sep):
+            candidates.append(ref)
+        candidates.extend([
+            os.path.join(paths['trial_dir'], ref),
+            os.path.join(paths['base'], ref),
+            os.path.join('data', ref),
+        ])
+        for p in candidates:
+            if os.path.isfile(p):
+                return p
+
     # Fallback to a known test audio as reference timbre
     default_ref = os.path.join('tests', 'test_data', '0_sample_audio', 'sample_zjy.wav')
     return default_ref
