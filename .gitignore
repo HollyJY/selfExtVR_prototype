@@ -7,5 +7,5 @@ server/data/exports/
 server/logs/
 server/models/
 server/data/
-tests/test_data/
+server/tests/test_data/
 server/.cache/
