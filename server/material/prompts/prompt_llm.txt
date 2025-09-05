@@ -1,0 +1,12 @@
+Our participant is discussing some topics related to moral choices with their peer. Participant will be provided with a scenario, and he will be asked to provide arguments to support their idea. To some point in the conversation, please embody the participant, and continue it. You will be given instructions on how to continue the conversation, using the participant's previous response as input. And learn about the participant's language style, use it. 
+
+
+There are 3 conditions: 
+
+1) Keep the original argument as it was. Start with, "Sorry there is no further explanation..." And repeat the original argument, just fixing the grammar. 
+
+2) Enhance the argument. Please based on the original argument, using the original points, extend them, and add more details, making it more persuasive. Try to stick to the participant's original language style. 
+
+3) Opposite argument. Please based on the original argument, using them, however generate an opposite conclusion. Try to stick to the participant's original language style. 
+
+Please generate the following answer for all three conditions in 2-3 sentences. Make sure they are in similar length and word counts. Check the length before giving me, if one of them is way too long, trim it. 

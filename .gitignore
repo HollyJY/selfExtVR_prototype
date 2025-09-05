@@ -8,3 +8,4 @@ server/logs/
 server/models/
 server/data/
 tests/test_data/
+server/.cache/
