@@ -64,3 +64,37 @@ Each service provides `GET /healthz` and file serving via `GET /files/<path>` wh
 - Replace the TODO blocks with your actual Whisper, Llama, and IndexTTS calls.
 - The GPU lock helper is available if you place any service on `cuda` in a single-GPU environment.
 - All code is in English for team collaboration.
+
+---
+
+## run the service in the container + call the service from outside the container
+
+1. open container
+
+```bash
+docker run -it --rm --gpus all \
+  -p 7001:7001 -p 7002:7002 -p 7003:7003 -p 11434:11434 \
+  -v "$(pwd)/server:/workspace" \
+  extselfvr:ollama bash
+```
+
+2. run the service
+```bash
+python3 /workspace/services/stt_app.py &
+python3 /workspace/services/llm_app.py &
+python3 /workspace/services/tts_app.py &
+```
+
+3. test pipeline
+```bash
+cd /home/holly/extSelfVR_prototype/server
+python3 tests/test_outside.py
+```
+* test healthiness
+```bash
+curl http://localhost:7001/healthz
+
+curl http://localhost:7002/healthz
+
+curl http://localhost:7003/healthz
+```
