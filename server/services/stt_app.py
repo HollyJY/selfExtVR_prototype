@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify, send_from_directory
 import os, time, hashlib, yaml
-from services.common.io_paths import ensure_trial_paths
-from services.common.timeline import Timeline
-from services.common.logging_conf import setup_logging
+from common.io_paths import ensure_trial_paths
+from common.timeline import Timeline
+from common.logging_conf import setup_logging
 
 import whisper
 
