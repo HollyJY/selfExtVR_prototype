@@ -19,7 +19,8 @@ def test_llm_smoke():
     payload = {
         "session_id": session_id,
         "trial_id": trial_id,
-        "prompt_path": prompt_path,
+        "prompt_path": prompt_path, # user_1B_asr.txt, relative to data/
+        "condition": "1",  # Optional, 1 - repeate, 2 - enhance, 3 - oppose
     }
     resp = client.post('/api/v1/llm', json=payload)
     assert resp.status_code == 200

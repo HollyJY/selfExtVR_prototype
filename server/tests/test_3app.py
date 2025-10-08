@@ -79,7 +79,7 @@ def run_pipeline(session_id: str = 'demo-session', trial_id: int = 1):
 def main():
     # Optionally, ensure no external servers are running; here we use Flask test clients,
     # so everything runs sequentially in-process ("挂起所有服务"的要求在此天然满足)。
-    t = run_pipeline(session_id = 'session-abdo', trial_id=1)
+    t = run_pipeline(session_id = 'demo-session', trial_id=1)
     print(f"STT: {t['stt_sec']:.3f}s | LLM: {t['llm_sec']:.3f}s | TTS: {t['tts_sec']:.3f}s | TOTAL: {t['total_sec']:.3f}s")
 
 

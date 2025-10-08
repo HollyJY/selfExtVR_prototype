@@ -98,3 +98,19 @@ curl http://localhost:7002/healthz
 
 curl http://localhost:7003/healthz
 ```
+
+---
+
+## add `orchestra_app.py`
+
+- rebuild docker
+
+```bash
+cd /home/holly/extSelfVR_prototype
+docker build -t extselfvr:latest server
+```
+
+```bash
+chmod +x /home/holly/extSelfVR_prototype/run_orchestra.sh
+./run_orchestra.sh
+```

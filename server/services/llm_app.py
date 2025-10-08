@@ -59,12 +59,14 @@ def llm():
     session_id = payload['session_id']
     trial_id = int(payload['trial_id'])
     prompt_path = payload['prompt_path']
+    condition = payload.get('condition', '1')  # Optional, 1 - repeat, 2 - enhance, 3 - oppose
     if not prompt_path.startswith('data/'):
         prompt_path = os.path.join('data', prompt_path)
 
     paths = ensure_trial_paths(session_id, trial_id)
     # Output file name as requested
     out_path = os.path.join(paths['trial_dir'], 'user_2B_llm.txt')
+    print(out_path)
 
     tl = Timeline(paths['timeline_path'])
     tl.add('llm_start')
@@ -113,6 +115,65 @@ def llm():
     reply = _ollama_generate(combined_prompt)
     if not reply:
         reply = combined_prompt if combined_prompt else 'No prompt content available.'
+
+    # Optionally modify reply based on condition
+    # If the model returned multiple numbered options (e.g., "1. Keep...", "2. Enhance...", "3. Oppose..."),
+    # pick the section that corresponds to the requested condition.
+    try:
+        import re
+
+        # Condition is expected to be '1', '2' or '3'
+        try:
+            cond_num = int(condition)
+        except Exception:
+            cond_num = 1
+        if cond_num not in (1, 2, 3):
+            cond_num = 1
+
+        # Simple approach per request:
+        # - split reply into paragraphs separated by blank lines
+        # - find the paragraph that contains the condition number (standalone digit)
+        # - return the paragraph that follows it (the block after the header)
+        blocks = [b.strip() for b in re.split(r'\n\s*\n', reply) if b.strip()]
+        picked = None
+        digit_re = re.compile(rf'(?<!\d){cond_num}(?!\d)')
+        for i, block in enumerate(blocks):
+            if digit_re.search(block):
+                # return the next block if available
+                if i + 1 < len(blocks):
+                    picked = blocks[i + 1]
+                else:
+                    # no next block; fall back to the block itself
+                    picked = block
+                break
+
+        if picked:
+            # Cleanup: remove trailing decorations like '**', ensure single line, and drop any header-like line.
+            cleaned = picked.strip()
+            # strip trailing asterisks/decorations at end
+            cleaned = re.sub(r'\s*\*+\s*$', '', cleaned)
+            # split to lines and remove empty
+            lines = [ln.strip() for ln in cleaned.splitlines() if ln.strip()]
+            if len(lines) > 1:
+                # remove any line that contains the standalone header number
+                header_line_re = re.compile(rf'(?<!\d){cond_num}(?!\d)')
+                lines = [ln for ln in lines if not header_line_re.search(ln)]
+                if not lines:
+                    # if everything got removed, fall back to first non-empty original line
+                    lines = [cleaned.splitlines()[0].strip()]
+            # join remaining lines into a single line
+            one_line = ' '.join(lines) if isinstance(lines, list) else cleaned
+            # remove any lingering header-like prefix at start (e.g., '**1) ' or '1. ')
+            one_line = re.sub(r'^\**\s*\d+\s*[\.\)\-]\s*', '', one_line).strip()
+            # final trailing decoration strip
+            one_line = re.sub(r'\s*\*+\s*$', '', one_line).strip()
+            reply = one_line if one_line else picked
+
+    except Exception:
+        # fast-fail: keep original reply
+        pass
+
+
     with open(out_path, 'w', encoding='utf-8') as f:
         f.write(reply)
 
