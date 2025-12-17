@@ -56,7 +56,7 @@ docker run -it --rm --gpus all -p 7001 -p 7002 -p 7003 -p 11434 -v "$(pwd)/serve
 ## Endpoints
 - STT: `POST /api/v1/stt` accepts `multipart/form-data` with `audio`, `session_id`, `trial_id`, optional `lang`.
 - LLM: `POST /api/v1/llm` accepts JSON with `session_id`, `trial_id`, and `prompt_path` pointing to a file under `data/`.
-- TTS: `POST /api/v1/tts` accepts JSON with `session_id`, `trial_id`.
+- TTS: `POST /api/v1/tts` accepts JSON or `multipart/form-data` with `session_id`, `trial_id`, `text`/`text_path`, and either a `ref_path` or uploaded `ref_audio` sample.
 
 Each service provides `GET /healthz` and file serving via `GET /files/<path>` where applicable.
 

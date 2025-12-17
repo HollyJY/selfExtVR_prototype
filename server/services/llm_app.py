@@ -11,6 +11,51 @@ cfg = yaml.safe_load(open(CFG_PATH, "r", encoding="utf-8"))
 app = Flask(__name__)
 log = setup_logging("llm")
 
+WORKSPACE_ROOT = os.environ.get('WORKSPACE', '/workspace')
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+
+def _resolve_user_context(raw_value, paths):
+    """Return (text, source_path) for the provided user_context value."""
+    value = (raw_value or '').strip()
+    if not value:
+        return '', ''
+
+    candidates = []
+
+    def _add_candidate(p: str):
+        if p:
+            candidates.append(p)
+
+    if os.path.isabs(value):
+        _add_candidate(value)
+    else:
+        _add_candidate(value)
+        _add_candidate(os.path.join(paths['trial_dir'], value))
+        _add_candidate(os.path.join(paths['meta_dir'], value))
+        _add_candidate(os.path.join(paths['base'], value))
+        _add_candidate(os.path.join('data', value))
+        if WORKSPACE_ROOT:
+            _add_candidate(os.path.join(WORKSPACE_ROOT, value.lstrip('/')))
+            _add_candidate(os.path.join(WORKSPACE_ROOT, 'data', value))
+        _add_candidate(os.path.join(REPO_ROOT, value))
+
+    seen = set()
+    for cand in candidates:
+        cand_abs = os.path.abspath(cand)
+        if cand_abs in seen:
+            continue
+        seen.add(cand_abs)
+        if os.path.isfile(cand_abs):
+            try:
+                with open(cand_abs, 'r', encoding='utf-8') as f:
+                    return f.read().strip(), cand_abs
+            except Exception as e:
+                log.warning(f"User context file not readable at {cand_abs}: {e}")
+                return '', cand_abs
+
+    return value, ''
+
 # --- Ollama client (preload model once) ---
 # Normalize host: ensure scheme present
 _raw_host = os.environ.get('OLLAMA_HOST', 'http://127.0.0.1:11434')
@@ -60,6 +105,7 @@ def llm():
     trial_id = int(payload['trial_id'])
     prompt_path = payload['prompt_path']
     condition = payload.get('condition', '1')  # Optional, 1 - repeat, 2 - enhance, 3 - oppose
+    user_context_raw = payload.get('user_context', '')
     if not prompt_path.startswith('data/'):
         prompt_path = os.path.join('data', prompt_path)
 
@@ -69,7 +115,7 @@ def llm():
     print(out_path)
 
     tl = Timeline(paths['timeline_path'])
-    tl.add('llm_start')
+    tl.add('llm_start', user_context=bool(str(user_context_raw).strip()))
 
     # Build prompt: template (prompt_llm.txt) + scene + ASR text
     prompt_root = cfg.get('paths', {}).get('prompt_root')
@@ -92,14 +138,25 @@ def llm():
         tmpl = ''
         log.warning(f"Prompt template not found or unreadable at {prompt_tmpl_path}: {e}")
 
-    # Read scene text from session meta (e.g., .../sessions/<session>_session/trial_<trial_id>/scene.txt)
-    scene_path = os.path.join(paths['trial_dir'], 'scene.txt')
-    try:
-        with open(scene_path, 'r', encoding='utf-8') as f:
-            scene_text = f.read().strip()
-    except Exception as e:
-        scene_text = ''
-        log.warning(f"Scene not found or unreadable at {scene_path}: {e}")
+    # Resolve user-provided context first; fallback to the on-disk scene file
+    scene_text = ''
+    context_source = ''
+    if user_context_raw:
+        scene_text, context_source = _resolve_user_context(user_context_raw, paths)
+        if scene_text and not context_source:
+            context_source = 'inline_user_context'
+        if not scene_text:
+            log.warning("User context provided but empty after processing. Falling back to scene.txt")
+    if not scene_text:
+        scene_path = os.path.join(paths['trial_dir'], 'scene.txt')
+        try:
+            with open(scene_path, 'r', encoding='utf-8') as f:
+                scene_text = f.read().strip()
+                context_source = scene_path if scene_text else ''
+        except Exception as e:
+            scene_text = ''
+            context_source = ''
+            log.warning(f"Scene not found or unreadable at {scene_path}: {e}")
 
     try:
         with open(prompt_path, 'r', encoding='utf-8') as f:
@@ -109,6 +166,8 @@ def llm():
         log.warning(f"ASR prompt not found or unreadable at {prompt_path}: {e}")
 
     # Build: template + scene + ASR text
+    tl.add('llm_context', context_source=context_source or ('scene_file' if scene_text else 'none'))
+
     combined_prompt = "\n\n".join(part for part in [tmpl, scene_text, asr_text] if part).strip()
 
     # Call Ollama; fallback to echoing prompt if unavailable

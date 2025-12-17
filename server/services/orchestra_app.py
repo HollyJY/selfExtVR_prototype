@@ -38,6 +38,89 @@ OUTPUT_FOLDER = '/workspace/data/outputs'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
+SERVER_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+DEFAULT_VOICE_ID = 'robotic'
+DEFAULT_REF_CANDIDATES = [
+    os.path.join('tests', 'test_data', '0_sample_audio', 'neutral_sample.wav'),
+    os.path.join('tests', 'test_data', 'neutral_sample.wav'),
+]
+
+
+def _resolve_audio_path(path_value, paths=None):
+    """Resolve an audio file path across common repo/workspace locations."""
+    if not path_value:
+        return ''
+
+    path_value = path_value.strip()
+    candidates = []
+    if os.path.isabs(path_value):
+        candidates.append(path_value)
+    else:
+        candidates.append(path_value)
+        if paths:
+            candidates.append(os.path.join(paths['trial_dir'], path_value))
+            candidates.append(os.path.join(paths['base'], path_value))
+        if not path_value.startswith('data' + os.sep):
+            candidates.append(os.path.join('data', path_value))
+        if workspace_path:
+            candidates.append(os.path.join(workspace_path, path_value.lstrip('/')))
+            if not path_value.startswith('data' + os.sep):
+                candidates.append(os.path.join(workspace_path, 'data', path_value))
+        candidates.append(os.path.join(SERVER_ROOT, path_value))
+        repo_root = os.path.abspath(os.path.join(SERVER_ROOT, '..'))
+        candidates.append(os.path.join(repo_root, path_value))
+
+    seen = set()
+    for cand in candidates:
+        if not cand:
+            continue
+        cand_abs = os.path.abspath(cand)
+        if cand_abs in seen:
+            continue
+        seen.add(cand_abs)
+        if os.path.isfile(cand_abs):
+            return cand_abs
+    return ''
+
+
+def _get_default_ref_path(paths):
+    for candidate in DEFAULT_REF_CANDIDATES:
+        resolved = _resolve_audio_path(candidate, paths)
+        if resolved:
+            return resolved
+    log.warning(
+        "Default reference sample not found at expected locations. Falling back to %s",
+        DEFAULT_REF_CANDIDATES[0]
+    )
+    return DEFAULT_REF_CANDIDATES[0]
+
+
+def _determine_voice_and_ref(raw_voice_id, raw_ref_path, session_ref_path, paths):
+    """Apply request voice preferences while ensuring we point at a real file."""
+    requested_voice = (raw_voice_id or '').strip()
+    requested_ref = (raw_ref_path or '').strip()
+    default_ref = _get_default_ref_path(paths)
+    session_ref = _resolve_audio_path(session_ref_path, paths) or session_ref_path
+
+    if not requested_voice:
+        return DEFAULT_VOICE_ID, default_ref
+
+    if requested_voice.lower() == 'clone':
+        clone_ref = _resolve_audio_path(requested_ref, paths)
+        if clone_ref:
+            return 'clone', clone_ref
+
+        log.warning(
+            "Requested clone voice but ref_path='%s' was not found. Falling back to %s",
+            requested_ref,
+            DEFAULT_VOICE_ID
+        )
+        return DEFAULT_VOICE_ID, default_ref
+
+    override_ref = _resolve_audio_path(requested_ref, paths) if requested_ref else ''
+    final_ref = override_ref or session_ref or default_ref
+    return requested_voice, final_ref
+
 @app.route('/healthz', methods=['GET'])
 def health_check():
     """Health check endpoint"""
@@ -53,8 +136,9 @@ def process_audio_pipeline():
     - session_id: unique session identifier
     - trial_id: trial number within session
     - lang: language code (optional, default 'en')
-    - voice_id: voice for TTS (optional, default 'default')
-    - user_context: additional context for LLM (optional)
+    - voice_id: voice for TTS (optional, default 'robotic')
+    - ref_path: reference audio path (required when voice_id='clone')
+    - user_context: additional context for LLM (optional, inline text or path to .txt file)
     - condition: LLM response condition (optional, 1 - repeat, 2 - enhance, 3 - oppose)
     """
 
@@ -66,7 +150,8 @@ def process_audio_pipeline():
         session_id = request.form.get('session_id', f'session_{int(time.time())}')
         trial_id = int(request.form.get('trial_id', '1'))
         lang = request.form.get('lang', 'en')
-        voice_id = request.form.get('voice_id', 'default')
+        raw_voice_id = request.form.get('voice_id', '')
+        raw_ref_path = request.form.get('ref_path', '')
         user_context = request.form.get('user_context', '')
         condition = request.form.get('condition', '1')  # Optional, 1 - repeat, 2 - enhance, 3 - oppose
         scene = request.form.get('scene', 'default')
@@ -89,6 +174,9 @@ def process_audio_pipeline():
 
         # Ensure directory structure
         paths = ensure_trial_paths(session_id, trial_id)
+        session_ref_candidate = os.path.join('sessions', f"{session_id}_session", 'meta', 'sample_voice.wav')
+        voice_id, ref_path = _determine_voice_and_ref(raw_voice_id, raw_ref_path, session_ref_candidate, paths)
+
         # Initialize timeline now that we have a path to write to
         tl = Timeline(paths['timeline_path'])
         tl.add('pipeline_start', session_id=session_id, trial_id=trial_id)
@@ -143,9 +231,10 @@ def process_audio_pipeline():
             'trial_id': trial_id,
             'prompt_path': prompt_path,
             'condition': str(condition),  # Optional, 1 - repeat, 2 - enhance, 3 - oppose
+            'user_context': user_context,
         }
         # record the llm payload (small summary) in timeline
-        tl.add('llm_start', prompt_path=prompt_path)
+        tl.add('llm_start', prompt_path=prompt_path, has_user_context=bool(user_context.strip()))
         log.info("Step 2: Calling LLM service...")
 
         try:
@@ -187,8 +276,7 @@ def process_audio_pipeline():
             }), 500
 
         # Step 3: TTS (Text-to-Speech)
-        # Prepare TTS payload: ref_path derived from session_id, text_path is llm_text_path
-        ref_path = os.path.join('sessions', f"{session_id}_session", 'meta', 'sample_voice.wav')
+        # Prepare TTS payload using the resolved voice/ref_path pair and LLM output
         tts_payload = {
             'session_id': session_id,
             'trial_id': trial_id,
@@ -241,6 +329,7 @@ def process_audio_pipeline():
             "processing_time": round(total_time, 2),
             "lang": lang,
             "voice_id": voice_id,
+            "ref_path": ref_path,
             "user_context": user_context,
             "condition": condition,
             "scene": scene,

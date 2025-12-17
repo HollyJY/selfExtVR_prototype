@@ -18,8 +18,14 @@ Process audio through the full pipeline.
 - `session_id` (string): Unique session identifier
 - `trial_id` (int): Trial number within session
 - `lang` (string, optional): Language code (default: 'en')
-- `voice_id` (string, optional): Voice ID for TTS (default: 'default')
-- `user_context` (string, optional): Additional context for LLM
+- `voice_id` (string, optional): Voice ID for TTS (default: 'robotic'; use `clone` to mimic a supplied sample)
+- `ref_path` (string, required when `voice_id` is `clone`): Reference audio path (absolute or relative to `/workspace`)
+- `user_context` (string, optional): Either inline context text or a path to a `.txt` file; when provided it overrides `scene.txt` for the LLM prompt
+
+If `voice_id` is omitted or empty, the service automatically uses the built-in robotic sample located at
+`tests/test_data/0_sample_audio/sample_zjy.wav`. When `voice_id` is `clone`, provide `ref_path` pointing to the file you want to mimic; if the file cannot be found the service falls back to the robotic voice.
+
+If `user_context` is supplied, the Orchestra service forwards it to the LLM. The value can be literal text (e.g., "You are role-playing as...") or a relative/absolute path to a file under `/workspace`; when a valid path is given the file contents replace the default `scene.txt` in the LLM prompt.
 
 **Response** (JSON):
 ```json
@@ -32,7 +38,8 @@ Process audio through the full pipeline.
   "tts_audio_path": "sessions/your_session/trial_001/user_2B_tts.wav",
   "processing_time": 5.23,
   "lang": "en",
-  "voice_id": "default",
+  "voice_id": "robotic",
+  "ref_path": "tests/test_data/0_sample_audio/sample_zjy.wav",
   "timeline": {
     "pipeline_start": 1234567890.123,
     "stt_start": 1234567890.200,
@@ -73,8 +80,11 @@ public class AudioProcessor : MonoBehaviour
         form.AddField("session_id", sessionId);
         form.AddField("trial_id", trialId.ToString());
         form.AddField("lang", "en");
-        form.AddField("voice_id", "default");
-        form.AddField("user_context", "This is a VR conversation");
+        form.AddField("voice_id", "robotic"); // use "clone" plus ref_path for custom cloning
+        // form.AddField("ref_path", "/workspace/data/sessions/your_session_id_session/meta/sample_voice.wav");
+        form.AddField("user_context", "You are the mentor guiding the player.");
+        // Example of pointing at a file already synced to the server/container:
+        // form.AddField("user_context", "data/sessions/your_session_id_session/meta/scene.txt");
         
         // Send request
         using (UnityWebRequest request = UnityWebRequest.Post($"{serverUrl}/api/v1/process", form))
@@ -184,6 +194,31 @@ Check if the orchestra service is running.
 ## Status Check
 ### GET `/api/v1/status/<session_id>/<trial_id>`
 Check processing status for a specific session/trial.
+
+## Standalone TTS Testing
+You can trigger the TTS service directly (bypassing STT/LLM) using either JSON or `multipart/form-data`. The latter lets you upload local reference audio/text files just like the orchestra endpoint handles microphone uploads.
+
+```bash
+curl -4 -X POST http://your-server-ip:7003/api/v1/tts \
+  -F "session_id=demo-session001" \
+  -F "trial_id=1" \
+  -F "text=This is an inline TTS test." \
+  -F "ref_audio=@/path/to/neutral_sample.wav" \
+  # Optional: -F "text_file=@/path/to/script.txt" to upload full prompt text
+```
+
+Alternatively, keep using JSON and point to files that already exist under `/workspace`:
+
+```bash
+curl -4 -X POST http://your-server-ip:7003/api/v1/tts \
+  -H 'Content-Type: application/json' \
+  -d '{
+        "session_id": "demo-session001",
+        "trial_id": 1,
+        "text_path": "sessions/demo-session001_session/trial_001/user_2B_llm.txt",
+        "ref_path": "sessions/demo-session001_session/meta/sample_voice.wav"
+      }'
+```
 
 ## Setup Instructions
 

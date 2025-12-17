@@ -4,12 +4,31 @@ from typing import Optional
 from common.io_paths import ensure_trial_paths
 from common.timeline import Timeline
 from common.logging_conf import setup_logging
+from werkzeug.utils import secure_filename
 
 CFG_PATH = "config/app.yml"
 cfg = yaml.safe_load(open(CFG_PATH, "r", encoding="utf-8"))
 
 app = Flask(__name__)
 log = setup_logging("tts")
+
+
+def _get_request_payload():
+    json_payload = request.get_json(silent=True)
+    if isinstance(json_payload, dict):
+        return dict(json_payload)
+    return request.form.to_dict() if request.form else {}
+
+
+def _save_uploaded_file(file_storage, dest_dir: str, fallback: str) -> Optional[str]:
+    if not file_storage or not getattr(file_storage, 'filename', None):
+        return None
+    filename = secure_filename(file_storage.filename) or fallback
+    rel_path = os.path.join(dest_dir, filename)
+    abs_path = os.path.abspath(rel_path)
+    os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+    file_storage.save(abs_path)
+    return abs_path
 
 # Ensure local IndexTTS package is importable when running from repo
 try:
@@ -125,13 +144,13 @@ def _resolve_ref_path(paths: dict, payload: dict) -> str:
                 return p
 
     # Fallback to a known test audio as reference timbre
-    default_ref = os.path.join('tests', 'test_data', '0_sample_audio', 'sample_zjy.wav')
+    default_ref = os.path.join('tests', 'test_data', '0_sample_audio', 'neutral_sample.wav')
     return default_ref
 
 def _derive_output_name(paths: dict, payload: dict) -> str:
     """Derive output wav filename from input text file name.
     If payload has text_path like 'user_2B_llm.txt', output becomes 'user_2B_tts.wav'.
-    Fallback: 'npc_2A_tts.wav'.
+    Fallback: 'npc_1A_tts.wav'.
     """
     text_path = (payload or {}).get("text_path")
     if text_path:
@@ -142,22 +161,35 @@ def _derive_output_name(paths: dict, payload: dict) -> str:
         else:
             out_name = f"{name}_tts.wav"
         return os.path.join(paths['trial_dir'], out_name)
-    return os.path.join(paths['trial_dir'], 'npc_2A_tts.wav')
+    return os.path.join(paths['trial_dir'], 'npc_1A_tts.wav')
 
 @app.post('/api/v1/tts')
 def tts():
     try:
-        payload = request.get_json(force=True, silent=True) or {}
-        session_id = payload.get('session_id', 'demo-session')
-        trial_id = int(payload.get('trial_id', 0))
+        payload = _get_request_payload() or {}
+        session_id = payload.get('session_id') or 'demo-session'
+        trial_id = int(payload.get('trial_id') or 0)
 
         paths = ensure_trial_paths(session_id, trial_id)
         audio_path = _derive_output_name(paths, payload)
 
         tl = Timeline(paths['timeline_path'])
+
+        ref_upload = request.files.get('ref_audio') if request.files else None
+        if ref_upload:
+            saved_ref = _save_uploaded_file(ref_upload, paths['meta_dir'], 'uploaded_ref.wav')
+            if saved_ref:
+                payload['ref_path'] = saved_ref
+
+        text_upload = request.files.get('text_file') if request.files else None
+        if text_upload:
+            saved_text = _save_uploaded_file(text_upload, paths['trial_dir'], 'uploaded_text.txt')
+            if saved_text:
+                payload['text_path'] = saved_text
+
         text = _resolve_text(paths, payload)
         ref_path = _resolve_ref_path(paths, payload)
-        tl.add('tts_start', text_len=len(text), ref=os.path.basename(ref_path))
+        tl.add('tts_start', text_len=len(text), ref=os.path.basename(ref_path), ref_uploaded=bool(ref_upload))
 
         did_fallback = False
         try:
