@@ -45,6 +45,8 @@ DEFAULT_REF_CANDIDATES = [
     os.path.join('tests', 'test_data', 'neutral_sample.wav'),
 ]
 
+CALL_LOG_FILENAME = 'call_log.jsonl'
+
 
 def _resolve_audio_path(path_value, paths=None):
     """Resolve an audio file path across common repo/workspace locations."""
@@ -102,24 +104,41 @@ def _determine_voice_and_ref(raw_voice_id, raw_ref_path, session_ref_path, paths
     default_ref = _get_default_ref_path(paths)
     session_ref = _resolve_audio_path(session_ref_path, paths) or session_ref_path
 
-    if not requested_voice:
-        return DEFAULT_VOICE_ID, default_ref
+    # Explicit mapping for robotic/clone to session meta samples if present
+    robotic_meta = _resolve_audio_path(os.path.join('meta', 'sample_robotic.wav'), paths)
+    clone_meta = _resolve_audio_path(os.path.join('meta', 'sample_user.wav'), paths)
+
+    if requested_voice.lower() == 'robotic':
+        return 'robotic', (robotic_meta or default_ref)
 
     if requested_voice.lower() == 'clone':
-        clone_ref = _resolve_audio_path(requested_ref, paths)
+        # Prioritize meta/sample_user.wav; otherwise fall back to provided ref_path; then default
+        clone_ref = clone_meta or _resolve_audio_path(requested_ref, paths)
         if clone_ref:
             return 'clone', clone_ref
-
         log.warning(
-            "Requested clone voice but ref_path='%s' was not found. Falling back to %s",
+            "Requested clone voice but no meta/sample_user.wav and ref_path='%s' not found. Falling back to %s",
             requested_ref,
             DEFAULT_VOICE_ID
         )
         return DEFAULT_VOICE_ID, default_ref
 
+    if not requested_voice:
+        return DEFAULT_VOICE_ID, default_ref
+
     override_ref = _resolve_audio_path(requested_ref, paths) if requested_ref else ''
     final_ref = override_ref or session_ref or default_ref
     return requested_voice, final_ref
+
+
+def _append_call_log(paths: dict, record: dict):
+    """Append a structured call log line to the trial directory."""
+    try:
+        log_path = os.path.join(paths['trial_dir'], CALL_LOG_FILENAME)
+        with open(log_path, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    except Exception as e:
+        log.warning("Failed to write call log: %s", e)
 
 @app.route('/healthz', methods=['GET'])
 def health_check():
@@ -144,6 +163,20 @@ def process_audio_pipeline():
 
     start_time = time.time()
     tl = None
+    timing = {
+        'stt': None,
+        'llm': None,
+        'tts': None,
+    }
+    call_log_record = {
+        "ts": start_time,
+        "status": "unknown",
+        "session_id": None,
+        "trial_id": None,
+        "request": {},
+        "timing": {},
+        "response": {}
+    }
 
     try:
         # Extract form data
@@ -155,6 +188,19 @@ def process_audio_pipeline():
         user_context = request.form.get('user_context', '')
         condition = request.form.get('condition', '1')  # Optional, 1 - repeat, 2 - enhance, 3 - oppose
         scene = request.form.get('scene', 'default')
+
+        call_log_record.update({
+            "session_id": session_id,
+            "trial_id": trial_id,
+            "request": {
+                "lang": lang,
+                "voice_id": raw_voice_id,
+                "ref_path": raw_ref_path,
+                "user_context_len": len(user_context),
+                "condition": condition,
+                "scene": scene
+            }
+        })
 
         # Check if audio file is present
         if 'audio' not in request.files:
@@ -185,6 +231,7 @@ def process_audio_pipeline():
         tl.add('stt_start')
         log.info("Step 1: Calling STT service...")
 
+        stt_t0 = time.time()
         stt_files = {'audio': (audio_file.filename, audio_file.stream, audio_file.content_type)}
         stt_data = {
             'session_id': session_id,
@@ -211,9 +258,14 @@ def process_audio_pipeline():
             log.info(f"STT completed: '{stt_text[:100]}...'")
             # record asr path and a short snippet of text in timeline
             tl.add('stt_end', asr_text_path=asr_text_path, asr_text_snippet=stt_text[:200])
+            timing['stt'] = time.time() - stt_t0
 
         except Exception as e:
             log.error(f"STT service error: {e}")
+            call_log_record["status"] = "error"
+            call_log_record["timing"] = {k: v for k, v in timing.items() if v is not None}
+            call_log_record["response"] = {"error": f"STT processing failed: {str(e)}"}
+            _append_call_log(ensure_trial_paths(session_id, trial_id), call_log_record)
             return jsonify({
                 "status": "error",
                 "error": f"STT processing failed: {str(e)}",
@@ -237,6 +289,7 @@ def process_audio_pipeline():
         tl.add('llm_start', prompt_path=prompt_path, has_user_context=bool(user_context.strip()))
         log.info("Step 2: Calling LLM service...")
 
+        llm_t0 = time.time()
         try:
             llm_response = requests.post(
                 f"{LLM_URL}/api/v1/llm",
@@ -265,9 +318,17 @@ def process_audio_pipeline():
             log.info(f"LLM completed: '{(llm_text[:100] if llm_text else llm_text_path) }...'")
             # record a small snippet of the LLM output and the path
             tl.add('llm_end', llm_text_snippet=(llm_text[:300] if llm_text else ''), llm_text_path=llm_text_path)
+            timing['llm'] = time.time() - llm_t0
 
         except Exception as e:
             log.error(f"LLM service error: {e}")
+            call_log_record["status"] = "error"
+            call_log_record["timing"] = {k: v for k, v in timing.items() if v is not None}
+            call_log_record["response"] = {
+                "error": f"LLM processing failed: {str(e)}",
+                "stt_text": stt_text
+            }
+            _append_call_log(ensure_trial_paths(session_id, trial_id), call_log_record)
             return jsonify({
                 "status": "error",
                 "error": f"LLM processing failed: {str(e)}",
@@ -286,6 +347,7 @@ def process_audio_pipeline():
         tl.add('tts_start', voice_id=voice_id, ref_path=ref_path, text_path=llm_text_path)
         log.info("Step 3: Calling TTS service...")
 
+        tts_t0 = time.time()
         try:
             tts_response = requests.post(
                 f"{TTS_URL}/api/v1/tts",
@@ -301,9 +363,18 @@ def process_audio_pipeline():
 
             log.info(f"TTS completed: {tts_audio_path}")
             tl.add('tts_end', tts_audio_path=tts_audio_path)
+            timing['tts'] = time.time() - tts_t0
 
         except Exception as e:
             log.error(f"TTS service error: {e}")
+            call_log_record["status"] = "error"
+            call_log_record["timing"] = {k: v for k, v in timing.items() if v is not None}
+            call_log_record["response"] = {
+                "error": f"TTS processing failed: {str(e)}",
+                "stt_text": stt_text,
+                "llm_response": llm_text
+            }
+            _append_call_log(ensure_trial_paths(session_id, trial_id), call_log_record)
             return jsonify({
                 "status": "error",
                 "error": f"TTS processing failed: {str(e)}",
@@ -317,6 +388,22 @@ def process_audio_pipeline():
         tl.add('pipeline_end', processing_time=round(total_time, 2))
 
         log.info(f"Pipeline completed in {total_time:.2f}s for session={session_id}")
+
+        call_log_record["status"] = "success"
+        call_log_record["timing"] = {
+            "stt": timing['stt'],
+            "llm": timing['llm'],
+            "tts": timing['tts'],
+            "total": total_time
+        }
+        call_log_record["response"] = {
+            "stt_text_snippet": stt_text[:200],
+            "llm_response_snippet": llm_text[:200],
+            "tts_audio_path": tts_audio_path,
+            "voice_id": voice_id,
+            "ref_path": ref_path
+        }
+        _append_call_log(paths, call_log_record)
 
         # Return comprehensive result
         return jsonify({
@@ -341,6 +428,13 @@ def process_audio_pipeline():
         tb = traceback.format_exc()
         log.error(f"Pipeline error: {e}\n{tb}")
         total_time = time.time() - start_time
+        call_log_record["status"] = "error"
+        call_log_record["timing"] = {**{k: v for k, v in timing.items()}, "total": total_time}
+        call_log_record["response"] = {"error": str(e)}
+        try:
+            _append_call_log(paths if 'paths' in locals() else ensure_trial_paths(session_id, trial_id), call_log_record)
+        except Exception:
+            pass
         if tl:
             try:
                 tl.add('pipeline_error', error=str(e)[:1000])
@@ -383,6 +477,70 @@ def download_file(filename):
     except Exception as e:
         log.error(f"File download error: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/v1/upload', methods=['POST'])
+def upload_file():
+    """
+    Lightweight upload endpoint (no pipeline execution).
+    Saves an uploaded file into the requested session/trial directory.
+
+    Form fields:
+    - file: required, the file to upload
+    - session_id: required, session identifier
+    - trial_id: optional, defaults to 1
+    - dest: optional, one of ['trial', 'meta', 'session']; defaults to 'trial'
+    - filename: optional, desired filename (will be sanitized); defaults to the uploaded filename
+    """
+    try:
+        if 'file' not in request.files:
+            return jsonify({"error": "No file part provided"}), 400
+
+        upload = request.files['file']
+        if not upload.filename:
+            return jsonify({"error": "Empty filename"}), 400
+
+        session_id = request.form.get('session_id', '').strip()
+        if not session_id:
+            return jsonify({"error": "session_id is required"}), 400
+        trial_id = int(request.form.get('trial_id', '1'))
+
+        dest_choice = request.form.get('dest', 'trial').lower()
+        paths = ensure_trial_paths(session_id, trial_id)
+
+        dest_dir = paths['trial_dir']
+        if dest_choice == 'meta':
+            dest_dir = paths['meta_dir']
+        elif dest_choice == 'session':
+            dest_dir = paths['base']
+
+        os.makedirs(dest_dir, exist_ok=True)
+
+        desired_name = request.form.get('filename', '').strip()
+        safe_name = secure_filename(desired_name) if desired_name else secure_filename(upload.filename)
+        if not safe_name:
+            return jsonify({"error": "Could not derive a safe filename"}), 400
+
+        abs_path = os.path.join(dest_dir, safe_name)
+        upload.save(abs_path)
+
+        # Build relative path from /workspace/data for convenience
+        rel_path = os.path.relpath(abs_path, start='/workspace/data')
+
+        log.info("Uploaded file saved: session=%s trial=%s dest=%s path=%s", session_id, trial_id, dest_choice, abs_path)
+        return jsonify({
+            "status": "success",
+            "session_id": session_id,
+            "trial_id": trial_id,
+            "dest": dest_choice,
+            "filename": safe_name,
+            "abs_path": abs_path,
+            "rel_path": rel_path
+        }), 200
+    except Exception as e:
+        log.error(f"Upload error: {e}")
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route('/api/v1/status/<session_id>/<int:trial_id>', methods=['GET'])
 def get_processing_status(session_id, trial_id):
