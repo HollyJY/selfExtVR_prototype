@@ -226,6 +226,10 @@ def llm():
             one_line = re.sub(r'^\**\s*\d+\s*[\.\)\-]\s*', '', one_line).strip()
             # final trailing decoration strip
             one_line = re.sub(r'\s*\*+\s*$', '', one_line).strip()
+            # remove unwanted phrases like "Opposite argument" or "Enhance the argument"
+            one_line = re.sub(r'(?i)\b(Opposite argument|Enhance the argument)\b[:\s]*', '', one_line).strip()
+            # remove any remaining trailing asterisks
+            one_line = re.sub(r'\*+\s*$', '', one_line).strip()
             reply = one_line if one_line else picked
 
     except Exception:

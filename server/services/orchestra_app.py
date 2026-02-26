@@ -105,11 +105,20 @@ def _determine_voice_and_ref(raw_voice_id, raw_ref_path, session_ref_path, paths
     session_ref = _resolve_audio_path(session_ref_path, paths) or session_ref_path
 
     # Explicit mapping for robotic/clone to session meta samples if present
-    robotic_meta = _resolve_audio_path(os.path.join('meta', 'sample_robotic.wav'), paths)
+    robotic_meta = _resolve_audio_path(os.path.join('meta', 'sample_voice.wav'), paths)
+    # robotic_male and robotic_female are in data/sample_audios/ (mounted directory)
+    robotic_male_meta = _resolve_audio_path(os.path.join('sample_audios', 'preview_male.mp3'), paths)
+    robotic_female_meta = _resolve_audio_path(os.path.join('sample_audios', 'preview_female.mp3'), paths)
     clone_meta = _resolve_audio_path(os.path.join('meta', 'sample_user.wav'), paths)
 
     if requested_voice.lower() == 'robotic':
         return 'robotic', (robotic_meta or default_ref)
+
+    if requested_voice.lower() == 'robotic_male':
+        return 'robotic_male', (robotic_male_meta or default_ref)
+
+    if requested_voice.lower() == 'robotic_female':
+        return 'robotic_female', (robotic_female_meta or default_ref)
 
     if requested_voice.lower() == 'clone':
         # Prioritize meta/sample_user.wav; otherwise fall back to provided ref_path; then default
