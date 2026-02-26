@@ -104,7 +104,14 @@ def llm():
     session_id = payload['session_id']
     trial_id = int(payload['trial_id'])
     prompt_path = payload['prompt_path']
-    condition = payload.get('condition', '1')  # Optional, 1 - repeat, 2 - enhance, 3 - oppose
+    condition = str(payload.get('condition', '')).strip()  # Optional, 1 - repeat, 2 - enhance, 3 - oppose
+    cond_num = None
+    try:
+        parsed = int(condition)
+        if parsed in (1, 2, 3, -1):
+            cond_num = parsed
+    except Exception:
+        cond_num = None
     user_context_raw = payload.get('user_context', '')
     if not prompt_path.startswith('data/'):
         prompt_path = os.path.join('data', prompt_path)
@@ -130,13 +137,23 @@ def llm():
             here = os.path.dirname(os.path.dirname(__file__))  # services/
             prompt_root = os.path.join(here, 'material', 'prompts')
 
-    prompt_tmpl_path = os.path.join(prompt_root, 'prompt_llm.txt')
-    try:
-        with open(prompt_tmpl_path, 'r', encoding='utf-8') as f:
-            tmpl = f.read().strip()
-    except Exception as e:
-        tmpl = ''
-        log.warning(f"Prompt template not found or unreadable at {prompt_tmpl_path}: {e}")
+    tmpl = ''
+    prompt_tmpl_path = None
+    if cond_num == -1:
+        log.info("Condition -1 received: skipping prompt template load")
+    else:
+        prompt_tmpl_path = os.path.join(prompt_root, 'prompt_llm.txt')
+        if cond_num in (1, 2, 3):
+            prompt_tmpl_name = f'prompt_llm_cond{cond_num}.txt'
+            prompt_tmpl_path_candidate = os.path.join(prompt_root, prompt_tmpl_name)
+            if os.path.isfile(prompt_tmpl_path_candidate):
+                prompt_tmpl_path = prompt_tmpl_path_candidate
+        try:
+            with open(prompt_tmpl_path, 'r', encoding='utf-8') as f:
+                tmpl = f.read().strip()
+        except Exception as e:
+            tmpl = ''
+            log.warning(f"Prompt template not found or unreadable at {prompt_tmpl_path}: {e}")
 
     # Resolve user-provided context first; fallback to the on-disk scene file
     scene_text = ''
@@ -175,62 +192,19 @@ def llm():
     if not reply:
         reply = combined_prompt if combined_prompt else 'No prompt content available.'
 
-    # Optionally modify reply based on condition
-    # If the model returned multiple numbered options (e.g., "1. Keep...", "2. Enhance...", "3. Oppose..."),
-    # pick the section that corresponds to the requested condition.
+    # Final cleanup for output format consistency
     try:
         import re
-
-        # Condition is expected to be '1', '2' or '3'
-        try:
-            cond_num = int(condition)
-        except Exception:
-            cond_num = 1
-        if cond_num not in (1, 2, 3):
-            cond_num = 1
-
-        # Simple approach per request:
-        # - split reply into paragraphs separated by blank lines
-        # - find the paragraph that contains the condition number (standalone digit)
-        # - return the paragraph that follows it (the block after the header)
-        blocks = [b.strip() for b in re.split(r'\n\s*\n', reply) if b.strip()]
-        picked = None
-        digit_re = re.compile(rf'(?<!\d){cond_num}(?!\d)')
-        for i, block in enumerate(blocks):
-            if digit_re.search(block):
-                # return the next block if available
-                if i + 1 < len(blocks):
-                    picked = blocks[i + 1]
-                else:
-                    # no next block; fall back to the block itself
-                    picked = block
-                break
-
-        if picked:
-            # Cleanup: remove trailing decorations like '**', ensure single line, and drop any header-like line.
-            cleaned = picked.strip()
-            # strip trailing asterisks/decorations at end
-            cleaned = re.sub(r'\s*\*+\s*$', '', cleaned)
-            # split to lines and remove empty
-            lines = [ln.strip() for ln in cleaned.splitlines() if ln.strip()]
-            if len(lines) > 1:
-                # remove any line that contains the standalone header number
-                header_line_re = re.compile(rf'(?<!\d){cond_num}(?!\d)')
-                lines = [ln for ln in lines if not header_line_re.search(ln)]
-                if not lines:
-                    # if everything got removed, fall back to first non-empty original line
-                    lines = [cleaned.splitlines()[0].strip()]
-            # join remaining lines into a single line
-            one_line = ' '.join(lines) if isinstance(lines, list) else cleaned
-            # remove any lingering header-like prefix at start (e.g., '**1) ' or '1. ')
-            one_line = re.sub(r'^\**\s*\d+\s*[\.\)\-]\s*', '', one_line).strip()
-            # final trailing decoration strip
-            one_line = re.sub(r'\s*\*+\s*$', '', one_line).strip()
-            # remove unwanted phrases like "Opposite argument" or "Enhance the argument"
-            one_line = re.sub(r'(?i)\b(Opposite argument|Enhance the argument)\b[:\s]*', '', one_line).strip()
-            # remove any remaining trailing asterisks
-            one_line = re.sub(r'\*+\s*$', '', one_line).strip()
-            reply = one_line if one_line else picked
+        cleaned = (reply or '').strip()
+        cleaned = re.sub(r'\*+', '', cleaned)
+        cleaned = re.sub(r'(?i)\bargument\b[:\s-]*', '', cleaned)
+        cleaned = re.sub(r"(?i)here'?s\s+the\s+response\s+in\s+2-3\s+sentences\s*[:.,-]*", '', cleaned)
+        cleaned = re.sub(r"(?i)response\s+in\s+2-3\s+sentences\s*[:.,-]*", '', cleaned)
+        cleaned = re.sub(r'\([^)]*\)', '', cleaned)
+        cleaned = re.sub(r'^\s*\d+\s*[\.\)\-]\s*', '', cleaned)
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+        if cleaned:
+            reply = cleaned
 
     except Exception:
         # fast-fail: keep original reply
@@ -244,6 +218,7 @@ def llm():
 
     return jsonify({
         'llm_text_path': os.path.relpath(out_path, start='data'),
+        'llm_text': reply,
         'timeline': tl.snapshot()
     })
 
