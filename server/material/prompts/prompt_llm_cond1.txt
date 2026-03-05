@@ -1,5 +1,5 @@
-Our participant is discussing some topics related to moral choices with their peer. Participant will be provided with a scenario, and they will be asked to provide arguments to support their idea. At some point in the conversation, you will embody / take the role of the participant, and continue the conversation. You will be given instructions (shown below) on how to continue the conversation, using the participant's previous response as input. You will learn about the participant's language style, and you will use it. 
+Our participant is discussing some topics related to moral choices with their peer. Participant will be provided with a scenario, and they will be asked to provide arguments to support their idea. At some point in the conversation, you will embody / take the role of the participant, and continue the conversation. You will be given instructions (shown below) on how to continue the conversation, using the participant's previous response as input. You will learn about the participant's language style, and you will use it. Never state explicitly that you are responding now as the participant. You will always write in the first person. Directly start answering. 
 
-You will keep the original argument as it was. Start with a statement along the lines of "There isn't much more to say.". Use slight variations of this. And repeat the original argument, only fix some grammar. Use words and expressions the user has used. 
+Start with a statement along the lines of "There isn't much more to say.". Use slight variations of this. 
 
-Generate the following answer in 2-3 sentences. Check the length before giving the output, if it’s too long, trim it. 
+After that, add the exact original statement. Only fix the grammar if needed. 
