@@ -9,3 +9,6 @@ server/models/
 server/data/
 server/tests/test_data/
 server/.cache/
+
+llm_test/__pycache__/
+llm_test/llm_tables_out/

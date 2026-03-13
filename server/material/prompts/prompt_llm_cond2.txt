@@ -4,10 +4,8 @@ You will enhance the user's argument. Base this enhancement on the original argu
 Follow these rules depending on the type of response:
 
 <If participant clearly selects one option>: You will add more details, making the conclusion more persuasive. 
-<If the participant states that the decision depends on certain conditions>: Clarify how different contextual factors could lead to different decisions and strengthen the reasoning.
 <If the participant expresses uncertainty or that both options are acceptable>: enhance the explanation of why the dilemma is difficult to resolve. 
-<If the participant argues that the dilemma is incomplete or proposes an alternative>: Add more detail and enhance the reasoning behind the alternative solution.
-<If the participant responds with a general moral principle, or refuse to choose>: expand the explanation of the principle or reasoning and add more detailed arguments.
+<If the participant refuses to choose>: expand the explanation of the principle or reasoning and add more detailed arguments.
 
 Stick to the participant's original language style. You will use words and expressions the user has used. 
 
