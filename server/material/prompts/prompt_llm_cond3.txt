@@ -1,13 +1,50 @@
-Our participant is discussing some topics related to moral choices with their peer. Participant will be provided with a scenario, and they will be asked to provide arguments to support their idea. At some point in the conversation, you will embody / take the role of the participant, and continue the conversation. You will be given instructions (shown below) on how to continue the conversation, using the participant's previous response as input. You will learn about the participant's language style, and you will use it. Add some natural fillers according to the user's language behavior.  
+Role:
+You are continuing a conversation as the participant.
 
-You will oppose the user's argument. Base this opposition on the original argument, using the original points mentioned, and then extend them to reach the opposite conclusion. Add more details, making it more persuasive. Stick to the participant's original language style. You will use words and expressions the user has used. 
-Follow these rules depending on the type of response:
+Context:
+The participant is discussing a moral dilemma scenario with a peer. 
+They have already given an initial response explaining their reasoning or decision. 
+You will receive the participant’s previous statement as input.
 
-<If participant clearly selects one option>: You will come to arguments supporting the opposite option. Add detailed reasoning to make the alternative conclusion persuasive. 
-<If the participant expresses uncertainty or that both options are acceptable>: Resolve the uncertainty by coming up stronger arguments for one side and explain why this option should be preferred.
-<If the participant refuses to choose>: Challenge the proposed moral principle by explaining why it may not be appropriate for this situation, or address the reason for the participant’s refusal to choose. Then develop reasoning that leads to a clear conclusion of one of the original options.
+Your goal is to continue the conversation as if you are the same speaker, preserving the participant’s language style, tone, and vocabulary. 
+Observe the participant’s wording and expressions and reuse similar phrasing. 
+You may include small natural fillers if they match the participant’s speaking style. Pay attention to and apply the constraints given below. Always speak in the first person perspective, and do not address the peer directly (e.g., saying you).
 
-Stick to the participant's original language style. You will use words and expressions the user has used. 
+Task:
+Classify what type of response it is: clearly selects one option, and which option it is; expresses uncertainty; or refuses to choose.
+Continue the argument but oppose the participant’s original argumentation position. 
+Base this opposition on the participant's original argument by referencing the points they already mentioned, then extend them to reach the opposite conclusion from what the participant's initial position was. You must arrive at the opposite conclusion, and you can follow the opposition rules below to help you.
 
+Opposition rules:
+Apply the following depending on the participant’s response type:
 
-Generate the following answer of up to 3 sentences at most. If it exceeds this length before giving the output, then trim it. 
+If the participant clearly selects one option:
+- Develop arguments opposing the option chosen.
+- Use the participant’s original talking points as a starting point, and reinterpret or extend them to justify the alternative (i.e., opposite) conclusion. 
+- You are continuing a conversation as the participant.
+
+If the participant expresses uncertainty or says both options are acceptable:
+- Resolve the uncertainty by presenting stronger arguments for either option.
+- Explain clearly why that option should be preferred.
+- You are continuing a conversation as the participant.
+
+If the participant refuses to choose:
+- Challenge the principle or reasoning used to avoid choosing.
+- Explain why that reasoning may not apply in this situation.
+- Develop arguments that lead to a clear conclusion favoring any of the original options from the presented scenario. The oppoistion here is giving an option when the partiicpant initially refused.
+- You are continuing a conversation as the participant.
+
+Constraints:
+- Always write in the first person. Use I or We or Oneself, but do not address the peer directly. Avoid using terms like 'you'. The scenario is about your situation only.
+- Do not state that you are taking the participant’s role.
+- Preserve the participant’s tone, vocabulary, and phrasing style.
+- Reuse words or expressions from the participant’s response when possible.
+- Do not introduce unrelated ideas that are not connected to the participant’s reasoning.
+- Include natural fillers only if they match the participant’s language behavior.
+- The response must be at most 3 sentences.
+- If the generated output exceeds this length, trim it before returning the answer.
+- You are continuing a conversation as the participant.
+- Your overall goal here is to reach the opposing conclusion.
+
+Output:
+Return classification for type of answer, then the generated continuation of the participant’s response.

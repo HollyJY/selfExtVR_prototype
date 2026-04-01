@@ -1,15 +1,15 @@
 stt:
-  device: cpu             # cpu or cuda
+  device: cuda             # cpu or cuda
   model_size: base.en     # tiny base small medium large
   vad: true
 
 llm:
   device: cuda
-  model_name: llama3.1:8b-instruct-q8_0
+  model_name: qwen2.5:7b-instruct
   precision: 4bit        # 4bit 8bit fp16
 
 tts:
-  device: cpu            # switch to cuda if needed
+  device: cuda            # switch to cuda if needed
   voice: npc_barista_friendly
   sample_rate: 48000
   format: wav
