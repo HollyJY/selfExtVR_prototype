@@ -65,12 +65,14 @@ fi
 if ! command -v ollama >/dev/null 2>&1; then
   echo "[entrypoint] Ollama not found; installing..."
   if command -v curl >/dev/null 2>&1; then
-    curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION="${OLLAMA_VERSION:-}" sh
+    curl -fL "https://github.com/ollama/ollama/releases/download/v${OLLAMA_VERSION:-0.21.2}/ollama-linux-amd64.tar.zst" -o /tmp/ollama-linux-amd64.tar.zst
   else
     echo "[entrypoint] curl not available; attempting apt-get install curl"
-    apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
-    curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION="${OLLAMA_VERSION:-}" sh
+    apt-get update && apt-get install -y --no-install-recommends curl zstd && rm -rf /var/lib/apt/lists/*
+    curl -fL "https://github.com/ollama/ollama/releases/download/v${OLLAMA_VERSION:-0.21.2}/ollama-linux-amd64.tar.zst" -o /tmp/ollama-linux-amd64.tar.zst
   fi
+  tar --zstd -xf /tmp/ollama-linux-amd64.tar.zst -C /usr/local
+  rm -f /tmp/ollama-linux-amd64.tar.zst
   if ! command -v ollama >/dev/null 2>&1; then
     echo "[entrypoint] Failed to install Ollama; continue without it."
   fi

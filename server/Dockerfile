@@ -1,7 +1,7 @@
 # 1) Base image
 FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
 
-ARG OLLAMA_VERSION=0.12.9
+ARG OLLAMA_VERSION=0.21.2
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -21,15 +21,16 @@ RUN apt-get update && \
     add-apt-repository universe && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-    python3 python3-pip ffmpeg git curl supervisor ca-certificates && \
+    python3 python3-pip ffmpeg git curl supervisor ca-certificates zstd && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace
 
 ## 2) Install Ollama (for local LLM serving)
-# Pin the version so image rebuilds are reproducible and don't depend on
-# whichever release the install script chooses to serve that day.
-RUN curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION=${OLLAMA_VERSION} sh
+# Install a specific release tarball directly so the image build is reproducible.
+RUN curl -fL "https://github.com/ollama/ollama/releases/download/v${OLLAMA_VERSION}/ollama-linux-amd64.tar.zst" -o /tmp/ollama-linux-amd64.tar.zst && \
+    tar --zstd -xf /tmp/ollama-linux-amd64.tar.zst -C /usr/local && \
+    rm -f /tmp/ollama-linux-amd64.tar.zst
 
 # Ensure model cache directory exists (and is mountable as a volume if desired)
 RUN mkdir -p ${OLLAMA_MODELS}
