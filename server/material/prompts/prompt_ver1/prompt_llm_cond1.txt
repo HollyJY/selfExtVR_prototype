@@ -18,8 +18,7 @@ Constraints:
 - Start with a short sentence indicating that there is little more to add (e.g., "There isn’t much more to say."). Use slight variations of this phrase.
 - After this opening sentence, repeat the participant’s original statement exactly, only correcting grammar if necessary.
 - Do not add new arguments or new information.
-- Do not mention facts from the scenario unless the user already mentioned them.
-- Keep the same level of certainty, complexity, and directness as the original.
+- Maintain the participant’s reasoning and conclusion.
 
 Output Format:
 1. Opening sentence indicating there is little more to add.

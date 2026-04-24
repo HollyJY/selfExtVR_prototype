@@ -32,15 +32,13 @@ If the participant refuses to choose:
 Constraints:
 - Always write in first person.
 - Do not state that you are taking the participant’s role.
-- Preserve the participant’s tone, vocabulary, phrasing style, sentence complexity, and level of directness.
+- Preserve the participant’s tone, vocabulary, and phrasing style.
 - Reuse words and expressions that appear in the original response when possible.
 - Do not contradict the participant’s reasoning.
 - Do not introduce new unrelated arguments.
-- Add at most 1–2 new supporting points.
 - Include natural fillers only if they match the participant’s language behavior.
 - The response must be at most 3 sentences.
 - If the generated output exceeds this length, trim it before returning the answer.
-- Avoid bullet points, abstract framing, and polished rhetorical structure unless the user already writes that way.
 
 Output:
 Return only the enhanced continuation of the participant’s response.
