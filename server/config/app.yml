@@ -5,7 +5,7 @@ stt:
 
 llm:
   device: cuda
-  model_name: qwen2.5:7b-instruct
+  model_name: qwen3.5:9b
   precision: 4bit        # 4bit 8bit fp16
 
 tts:

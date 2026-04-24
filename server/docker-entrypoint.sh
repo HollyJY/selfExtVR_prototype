@@ -65,11 +65,11 @@ fi
 if ! command -v ollama >/dev/null 2>&1; then
   echo "[entrypoint] Ollama not found; installing..."
   if command -v curl >/dev/null 2>&1; then
-    curl -fsSL https://ollama.com/install.sh | sh
+    curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION="${OLLAMA_VERSION:-}" sh
   else
     echo "[entrypoint] curl not available; attempting apt-get install curl"
     apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
-    curl -fsSL https://ollama.com/install.sh | sh
+    curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION="${OLLAMA_VERSION:-}" sh
   fi
   if ! command -v ollama >/dev/null 2>&1; then
     echo "[entrypoint] Failed to install Ollama; continue without it."

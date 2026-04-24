@@ -1,6 +1,8 @@
 # 1) Base image
 FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
 
+ARG OLLAMA_VERSION=0.12.9
+
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -10,6 +12,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     HUGGINGFACE_HUB_CACHE=/workspace/.cache/hf \
     OLLAMA_HOST=0.0.0.0:11434 \
     OLLAMA_MODELS=/workspace/models/llama \
+    OLLAMA_VERSION=${OLLAMA_VERSION} \
     NVIDIA_VISIBLE_DEVICES=all \
     NVIDIA_DRIVER_CAPABILITIES=compute,utility
 RUN apt-get update && \
@@ -24,8 +27,9 @@ RUN apt-get update && \
 WORKDIR /workspace
 
 ## 2) Install Ollama (for local LLM serving)
-# Note: Requires network at build time. Installs /usr/local/bin/ollama
-RUN curl -fsSL https://ollama.com/install.sh | sh
+# Pin the version so image rebuilds are reproducible and don't depend on
+# whichever release the install script chooses to serve that day.
+RUN curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION=${OLLAMA_VERSION} sh
 
 # Ensure model cache directory exists (and is mountable as a volume if desired)
 RUN mkdir -p ${OLLAMA_MODELS}
