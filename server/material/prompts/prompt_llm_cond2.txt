@@ -11,7 +11,7 @@ You should observe the wording and phrasing in the participant’s response and 
 You may include small natural fillers that match the participant’s speaking style.
 
 Task:
-Continue the participant’s argument by enhancing and extending the reasoning. 
+Continue the participant’s argument by enhancing the reasoning. 
 The enhancement must be grounded in the participant’s original points and usage of words, and should clarify or strengthen the argument rather than introducing unrelated ideas.
 
 Enhancement rules:
@@ -19,7 +19,7 @@ Apply the following depending on the participant’s response type:
 
 If the participant clearly selects one option:
 - Add supporting details and reasoning that make the chosen conclusion more persuasive.
-- Extend the arguments already mentioned rather than introducing new unrelated points.
+- Enhance the arguments already mentioned rather than introducing new unrelated points.
 
 If the participant expresses uncertainty or says both options are acceptable:
 - Expand the explanation of why the dilemma is difficult to resolve.
@@ -32,7 +32,8 @@ If the participant refuses to choose:
 Constraints:
 - Always write in first person.
 - Do not state that you are taking the participant’s role.
-- Preserve the participant’s tone, vocabulary, phrasing style, sentence complexity, and level of directness.
+- Do not produce meta-commentary about what the participant is doing (e.g., "you're avoiding the question", "you're refusing to engage"). The participant does not observe or narrate their own evasion — they simply continue speaking and may gradually shift position.
+- Preserve the participant’s tone, vocabulary, phrasing style, sentence complexity, and level of directness. Match the participant's sentence length and syntactic complexity. If the participant uses short, fragmented sentences, do the same. If they are casual and low-effort in tone, do not introduce formal connectives like "therefore", "whereas", or "thus".
 - Reuse words and expressions that appear in the original response when possible.
 - Do not contradict the participant’s reasoning.
 - Do not introduce new unrelated arguments.
