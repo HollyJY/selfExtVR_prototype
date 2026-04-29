@@ -65,6 +65,25 @@ OLLAMA_HOST = _raw_host
 # Prefer explicit user request model, fallback to config, then a sane default
 MODEL_NAME = os.environ.get('OLLAMA_MODEL') or cfg.get('llm', {}).get('model_name') or 'llama3.1:8b-instruct-q8_0'
 
+
+def _as_bool(value, default=False):
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        return value.strip().lower() in ('1', 'true', 'yes', 'on')
+    return default
+
+
+# Force-disable thinking by default. Can be overridden with OLLAMA_THINK.
+THINK_ENABLED = _as_bool(
+    os.environ.get('OLLAMA_THINK', cfg.get('llm', {}).get('think', False)),
+    default=False,
+)
+
 _http = requests.Session()
 
 def _ollama_generate(prompt: str, keep_alive: str = '24h', timeout: float = 120.0) -> str:
@@ -75,6 +94,7 @@ def _ollama_generate(prompt: str, keep_alive: str = '24h', timeout: float = 120.
             'prompt': prompt,
             'stream': False,
             'keep_alive': keep_alive,
+            'think': THINK_ENABLED,
         }
         resp = _http.post(url, json=data, timeout=timeout)
         resp.raise_for_status()
@@ -89,7 +109,9 @@ def _warmup_model():
     # Trigger a lightweight load to avoid first-call latency
     test_prompt = "You are loaded."
     _ = _ollama_generate(test_prompt, keep_alive='24h', timeout=10.0)
-    log.info(f"Ollama warmup attempted for model '{MODEL_NAME}' at {OLLAMA_HOST}")
+    log.info(
+        f"Ollama warmup attempted for model '{MODEL_NAME}' at {OLLAMA_HOST} (think={THINK_ENABLED})"
+    )
 
 # Warm up on import
 try:

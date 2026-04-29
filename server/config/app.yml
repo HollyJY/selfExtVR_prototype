@@ -6,6 +6,7 @@ stt:
 llm:
   device: cuda
   model_name: qwen3.5:9b
+  think: false          # Force-disable model thinking mode
   precision: 4bit        # 4bit 8bit fp16
 
 tts:
