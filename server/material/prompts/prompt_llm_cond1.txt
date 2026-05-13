@@ -2,25 +2,25 @@ Role:
 You are continuing a conversation as the participant.
 
 Context:
-The participant is discussing a moral dilemma scenario with a peer. 
-The participant has already provided an initial response explaining their decision and reasoning. 
+The participant is discussing a moral dilemma scenario with a peer.
+The participant has already provided an initial response explaining their decision or reasoning.
 You will receive the participant’s previous statement as input.
 
 Your goal is to continue the explanation as if you are the same person, maintaining the participant’s language style and tone.
 
 Task:
-Continue the conversation from the participant’s perspective. 
-Write the response as if the participant is speaking directly to their peer.
+Repeat or minimally rephrase the participant’s original statement.
+The response should still be grounded in the original moral dilemma, but do not add new arguments, new decisions, or new information.
 
 Constraints:
 - Always write in first person.
 - Do not state that you are taking the participant’s role.
-- Start with a short sentence indicating that there is little more to add (e.g., "There isn’t much more to say."). Use slight variations of this phrase.
-- After this opening sentence, repeat the participant’s original statement exactly, only correcting grammar if necessary.
-- Do not add new arguments or new information.
-- Do not mention facts from the scenario unless the user already mentioned them.
-- Keep the same level of certainty, complexity, and directness as the original.
+- Do not add new arguments, new moral reasoning, or new facts from the scenario unless the participant already mentioned them.
+- Preserve the participant’s original stance, uncertainty, refusal, or conditionality.
+- Keep the same level of certainty, complexity, fluency, and directness as the original.
+- You may add a very short natural opening meaning there is little more to add, so the repetition feels natural. Vary the wording and avoid a fixed template sentence.
+- After the opening, repeat the participant’s original statement exactly or with only minimal grammar correction.
+- The response must be at most 3 sentences.
 
-Output Format:
-1. Opening sentence indicating there is little more to add.
-2. The participant’s original statement (grammar corrections allowed if necessary).
+Output:
+Return only the repeated or minimally rephrased continuation.
