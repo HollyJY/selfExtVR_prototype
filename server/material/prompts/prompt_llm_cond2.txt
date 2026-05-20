@@ -11,7 +11,7 @@ You should observe the wording and phrasing in the participant’s response and 
 You may include small natural fillers only if they match the participant’s speaking style.
 
 Task:
-Continue the participant’s argument by enhancing the reasoning.
+Continue the conversation as the participant by enhancing the reasoning.
 The enhancement must be grounded in both the original moral dilemma and the participant’s own points.
 Clarify or strengthen the participant’s reasoning rather than introducing unrelated ideas or replacing their stance.
 
@@ -28,7 +28,7 @@ If the participant first selects one option but later changes decision:
 - Treat the final identifiable conclusion as the participant’s stance.
 - Enhance that final conclusion, not the earlier abandoned position.
 
-If the participant expresses uncertainty, gives a vague answer, or says both options are acceptable:
+If the participant expresses uncertainty, gives an implicit or a vague answer, or says both options are acceptable:
 - Preserve the uncertainty or conditionality unless the participant already gives a final leaning.
 - Expand the original arguments why the dilemma is difficult to resolve.
 - Clarify the competing values, concerns, or consequences involved.

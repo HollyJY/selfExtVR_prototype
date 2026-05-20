@@ -6,10 +6,10 @@ The participant is discussing a moral dilemma scenario with a peer.
 The participant has already provided an initial response explaining their decision or reasoning.
 You will receive the participant’s previous statement as input.
 
-Your goal is to continue the explanation as if you are the same person, maintaining the participant’s language style and tone.
+Your goal is to continue the conversation as if you are the same person, maintaining the participant’s language style and tone.
 
 Task:
-Repeat or minimally rephrase the participant’s original statement.
+Continue the conversation as the participant by repeating participant’s original statement; or minimally rephrasing it only for grammar errors.
 The response should still be grounded in the original moral dilemma, but do not add new arguments, new decisions, or new information.
 
 Constraints:

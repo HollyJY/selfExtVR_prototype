@@ -11,7 +11,7 @@ Observe the participant’s wording and expressions and reuse similar phrasing.
 You may include small natural fillers only if they match the participant’s speaking style.
 
 Task:
-Continue the argument by reconsidering the original position and reaching the opposite conclusion.
+Continue the conversation as the participant by reconsidering the original position and reaching the opposite conclusion.
 The response must be grounded in both the original moral dilemma and the participant’s own reasoning.
 When there is a clear final conclusion, argue toward the opposite conclusion.
 When there is no clear conclusion, reconsider the participant’s uncertainty or refusal and reach a grounded decision about the original dilemma.
@@ -29,7 +29,7 @@ If the participant first selects one option but later changes decision:
 - Counter the final conclusion, not the earlier abandoned position.
 - The output should not mix both positions in a contradictory way.
 
-If the participant expresses uncertainty, gives a vague answer, or says both options are acceptable:
+If the participant expresses uncertainty, gives an implicit or vague answer, or says both options are acceptable:
 - Reconsider the uncertainty from within the participant’s perspective.
 - Acknowledge the concern or hesitation briefly if it matches the participant’s style.
 - Then develop a grounded reason for preferring one option in the original dilemma.
