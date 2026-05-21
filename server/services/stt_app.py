@@ -10,15 +10,31 @@ import whisper
 CFG_PATH = "config/app.yml"
 cfg = yaml.safe_load(open(CFG_PATH, "r", encoding="utf-8"))
 
-# load model globally, whisper model will be loaded on first use, instead of every request
 MODEL_NAME = os.environ.get("WHISPER_MODEL", cfg.get("stt", {}).get("model_size", "base.en"))
-DEVICE = os.environ.get("WHISPER_DEVICE", cfg.get("stt", {}).get("device", "cpu")) # cpu or cuda
+REQUESTED_DEVICE = os.environ.get("WHISPER_DEVICE", cfg.get("stt", {}).get("device", "cpu")) # cpu or cuda
 MODELS_DIR = cfg["paths"]["models_root"] if "paths" in cfg else "models"
 STT_MODELS_DIR = os.path.join(MODELS_DIR, "whisper")
 
-print(f"[stt] loading whisper model='{MODEL_NAME}' on device='{DEVICE}'...")
-_model = whisper.load_model(MODEL_NAME, download_root=os.path.join(MODELS_DIR, "whisper")).to(DEVICE)
-print("[stt] model ready")
+
+def _load_model_with_fallback():
+    requested = (REQUESTED_DEVICE or "cpu").strip().lower()
+    print(f"[stt] loading whisper model='{MODEL_NAME}' on device='{requested}'...")
+    try:
+        model = whisper.load_model(MODEL_NAME, download_root=STT_MODELS_DIR).to(requested)
+        print(f"[stt] model ready on device='{requested}'")
+        return model, requested
+    except Exception as e:
+        if requested == "cpu":
+            raise
+        fallback = "cpu"
+        print(f"[stt] failed to initialize on device='{requested}': {e}")
+        print(f"[stt] retrying whisper model='{MODEL_NAME}' on device='{fallback}'...")
+        model = whisper.load_model(MODEL_NAME, download_root=STT_MODELS_DIR).to(fallback)
+        print(f"[stt] model ready on device='{fallback}'")
+        return model, fallback
+
+
+_model, ACTIVE_DEVICE = _load_model_with_fallback()
 
 # create the Flask app
 app = Flask(__name__)
@@ -58,7 +74,7 @@ def stt():
 
         # TODO load Whisper and transcribe the wav_path
         # Whisper's language parameter uses a two-letter code. 
-        transcribe_kwargs = dict(fp16=False) if DEVICE == "cpu" else dict(fp16=True)
+        transcribe_kwargs = dict(fp16=False) if ACTIVE_DEVICE == "cpu" else dict(fp16=True)
         if lang != "auto":
             transcribe_kwargs["language"] = lang
 

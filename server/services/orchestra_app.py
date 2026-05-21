@@ -361,13 +361,15 @@ def process_audio_pipeline():
             tts_response = requests.post(
                 f"{TTS_URL}/api/v1/tts",
                 json=tts_payload,
-                timeout=90
+                timeout=180
             )
 
             if tts_response.status_code != 200:
                 raise Exception(f"TTS service failed: {tts_response.text}")
 
             tts_result = tts_response.json()
+            if tts_result.get('fallback'):
+                raise Exception(tts_result.get('error') or 'TTS service returned fallback audio')
             tts_audio_path = tts_result.get('audio_path', tts_result.get('tts_audio_path', ''))
 
             log.info(f"TTS completed: {tts_audio_path}")

@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, send_from_directory
-import os, yaml, time, traceback
+import os, yaml, time, traceback, subprocess
 from typing import Optional
 from common.io_paths import ensure_trial_paths
 from common.timeline import Timeline
@@ -11,6 +11,21 @@ cfg = yaml.safe_load(open(CFG_PATH, "r", encoding="utf-8"))
 
 app = Flask(__name__)
 log = setup_logging("tts")
+
+
+def _as_bool(value, default=False):
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        return value.strip().lower() in ('1', 'true', 'yes', 'on')
+    return default
+
+TTS_ALLOW_FALLBACK = _as_bool(os.environ.get("TTS_ALLOW_FALLBACK"), default=False)
+TTS_MAX_REF_SECONDS = float(os.environ.get("TTS_MAX_REF_SECONDS", "12"))
 
 
 def _get_request_payload():
@@ -147,6 +162,30 @@ def _resolve_ref_path(paths: dict, payload: dict) -> str:
     default_ref = os.path.join('tests', 'test_data', '0_sample_audio', 'neutral_sample.wav')
     return default_ref
 
+def _prepare_ref_audio(ref_path: str, paths: dict) -> str:
+    """Trim long reference audio to keep CPU inference bounded."""
+    try:
+        max_ref_seconds = max(1.0, float(TTS_MAX_REF_SECONDS))
+    except Exception:
+        max_ref_seconds = 12.0
+
+    trimmed_path = os.path.join(paths['meta_dir'], 'tts_ref_prompt.wav')
+    cmd = [
+        'ffmpeg', '-y', '-v', 'error',
+        '-i', ref_path,
+        '-t', str(max_ref_seconds),
+        '-ac', '1',
+        '-ar', '24000',
+        trimmed_path,
+    ]
+    try:
+        subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return trimmed_path
+    except subprocess.CalledProcessError as e:
+        stderr = e.stderr.decode('utf-8', errors='ignore') if e.stderr else ''
+        raise RuntimeError(f'Failed to prepare reference audio {ref_path}: {stderr.strip()}') from e
+
+
 def _derive_output_name(paths: dict, payload: dict) -> str:
     """Derive output wav filename from input text file name.
     If payload has text_path like 'user_2B_llm.txt', output becomes 'user_2B_tts.wav'.
@@ -189,9 +228,11 @@ def tts():
 
         text = _resolve_text(paths, payload)
         ref_path = _resolve_ref_path(paths, payload)
+        ref_path = _prepare_ref_audio(ref_path, paths)
         tl.add('tts_start', text_len=len(text), ref=os.path.basename(ref_path), ref_uploaded=bool(ref_upload))
 
         did_fallback = False
+        fallback_error = ''
         try:
             if _tts_model is None:
                 raise RuntimeError("IndexTTS model is not initialized")
@@ -213,8 +254,8 @@ def tts():
                 max_mel_tokens=600,
             )
         except Exception:
-            # Fallback: generate a short silent wav to keep pipeline flowing
-            log.error("[tts] Inference failed, writing fallback WAV:\n" + traceback.format_exc())
+            fallback_error = traceback.format_exc()
+            log.error("[tts] Inference failed, writing fallback WAV:\n" + fallback_error)
             try:
                 import wave, struct
                 sr = int(cfg.get('tts', {}).get('sample_rate', 48000))
@@ -235,12 +276,22 @@ def tts():
 
         tl.add('tts_end')
 
+        if did_fallback and not TTS_ALLOW_FALLBACK:
+            return jsonify({
+                'error': 'TTS inference failed',
+                'audio_path': os.path.relpath(audio_path, start='data'),
+                'timeline': tl.snapshot(),
+                'fallback': True,
+                'trace': fallback_error,
+            }), 500
+
         return jsonify({
             'session_id': session_id,
             'trial_id': trial_id,
             'audio_path': os.path.relpath(audio_path, start='data'),
             'timeline': tl.snapshot(),
-            'fallback': did_fallback
+            'fallback': did_fallback,
+            'error': ('TTS inference failed; fallback audio returned' if did_fallback else '')
         })
     except Exception as e:
         log.error(f"[tts] Error: {traceback.format_exc()}")
