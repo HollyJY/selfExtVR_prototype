@@ -2,6 +2,10 @@
 FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
 
 ARG OLLAMA_VERSION=0.21.2
+ARG TORCH_VERSION=2.5.1
+ARG TORCHAUDIO_VERSION=2.5.1
+ARG TORCHVISION_VERSION=0.20.1
+ARG TORCH_INDEX_URL=https://download.pytorch.org/whl/cu121
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -37,7 +41,13 @@ RUN mkdir -p ${OLLAMA_MODELS}
 
 COPY requirements.txt ./
 RUN python3 -m pip install --upgrade pip \
-    && pip3 install --ignore-installed -r requirements.txt
+    && pip3 install --ignore-installed -r requirements.txt \
+    && pip3 install --force-reinstall --no-cache-dir \
+        torch==${TORCH_VERSION} \
+        torchaudio==${TORCHAUDIO_VERSION} \
+        torchvision==${TORCHVISION_VERSION} \
+        --index-url ${TORCH_INDEX_URL}
+
 
 ## IndexTTS (local) installation
 # Copy the IndexTTS project into the image and install it so the TTS service can import it.
