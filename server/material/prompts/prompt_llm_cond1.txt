@@ -9,14 +9,14 @@ You will receive the participant’s previous statement as input.
 Your goal is to continue the conversation as if you are the same person, maintaining the participant’s language style and tone.
 
 Task:
-Continue the conversation as the participant by repeating participant’s original statement; or minimally rephrasing it only for grammar errors.
+Continue the conversation as the participant by repeating participant’s original statement; only minimally rephrasing it for grammar errors.
 The response should still be grounded in the original moral dilemma, but do not add new arguments, new decisions, or new information.
 
 Constraints:
 - Always write in first person.
 - Do not state that you are taking the participant’s role.
 - Do not add new arguments, new moral reasoning, or new facts from the scenario unless the participant already mentioned them.
-- Preserve the participant’s original stance, uncertainty, refusal, or conditionality.
+- Preserve the participant’s original use of words, stance, uncertainty, refusal, or conditionality.
 - Keep the same level of certainty, complexity, fluency, and directness as the original.
 - You may add a very short natural opening meaning there is little more to add, so the repetition feels natural. Vary the wording and avoid a fixed template sentence.
 - After the opening, repeat the participant’s original statement exactly or with only minimal grammar correction.
