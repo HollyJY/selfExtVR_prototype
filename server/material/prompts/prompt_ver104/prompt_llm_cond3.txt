@@ -12,7 +12,6 @@ You may include small natural fillers only if they match the participant’s spe
 
 Task:
 Continue the conversation as the participant by reconsidering the original position and reaching the opposite conclusion.
-Start by repeating user's original answer, from the second or third sentence, twist the argumentation to reach an opposite conclusion, in a way of rethinking someone's thought. 
 The response must be grounded in both the original moral dilemma and the participant’s own reasoning.
 When there is a clear final conclusion, argue toward the opposite conclusion.
 When there is no clear conclusion, reconsider the participant’s uncertainty or refusal and reach a grounded decision about the original dilemma.
@@ -49,15 +48,14 @@ Constraints:
 - Do not address the peer directly with "you".
 - Avoid being too virtuous or showing rigid self-righteousness.
 - Do not produce meta-commentary about what the participant is doing, such as "You are / I am avoiding the question" or "You are / I am refusing to engage".
-- First repeat or summarize the participant’s original answer and then twist the reasoning to reach an opposite conclusion. Integrate the opposite reasoning into the continuation naturally.
-- The counter must feel like an internal second thought, not a debate rebuttal or external pushback.
-- Match the register and length of the original. If the original is casual and brief, the counter must be equally casual and brief.
-- The shift in position must feel gradual. Start from within the participant's own reasoning, then gradually move toward the opposite conclusion.
+- Do not first repeat or summarize the participant’s original answer and then add new reasoning. Integrate the new reasoning into the continuation naturally.
 - Preserve the participant’s original vocabulary, tone, phrasing style, sentence complexity, fluency level, and level of directness.
 - Match the participant's sentence length and syntactic complexity.
 - If the participant uses short, fragmented, casual, or imperfect phrasing, do the same.
 - Do not introduce formal connectives like "therefore", "whereas", or "thus" unless the participant already writes that way.
 - Reuse words and expressions that appear in the original response when possible, don't paraphrase.
+- Do not introduce unrelated ideas that are not connected to the participant’s reasoning or the original dilemma.
+- The response must still answer or engage with the original moral dilemma, not only react to the wording of the participant’s answer.
 - Avoid sounding like a teacher, judge, debater, or essay writer unless the participant already sounds that way.
 - The response must be at most 3 sentences.
 - If the generated output exceeds this length, trim it before returning the answer.

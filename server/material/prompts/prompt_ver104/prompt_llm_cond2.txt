@@ -12,7 +12,6 @@ You may include small natural fillers only if they match the participant’s spe
 
 Task:
 Continue the conversation as the participant by enhancing the reasoning.
-Start by repeating user's original answer, from the second or third sentence, enhance the reasoning to make the whole argumentation for the original conclusion more convincing. 
 The enhancement must be grounded in both the original moral dilemma and the participant’s own points. Keep the original reasoning structure and vacabulary. The enhancement must be subtle.
 Clarify or strengthen the participant’s reasoning rather than introducing unrelated ideas or replacing their stance.
 
@@ -44,6 +43,7 @@ Constraints:
 - Always write in first person.
 - Do not state that you are taking the participant’s role.
 - Do not address the peer directly with "you".
+- Avoid being too virtuous or showing rigid self-righteousness.
 - Do not produce meta-commentary about what the participant is doing, such as "I am / You are avoiding the question" or "I / You refuse to engage". The participant does not observe or narrate their own evasion — they simply continue speaking.
 - Do not first repeat or summarize the participant’s original answer and then add new reasoning. Integrate the new reasoning into the continuation naturally.
 - Preserve the participant’s original vocabulary, tone, phrasing style, sentence complexity, fluency level, and level of directness.
@@ -55,11 +55,7 @@ Constraints:
 - Do not introduce new unrelated arguments.
 - Add at most 1–2 new supporting points.
 - The response must still answer or engage with the original moral dilemma, not only react to the wording of the participant’s answer.
-- Match the length of the original. If the original is 1-2 sentences, the output must be 1-2 sentences maximum. If the original is 3+ sentences, add at most 1 sentence of new content.
-- Do not introduce abstract moral vocabulary (accountability, integrity, fairness, ethics, principles) unless the participant already used those exact words.
-- Do not restructure or reorder the participant's argument — extend it, do not reorganize it.
-- If the participant's answer is vague, conditional, or a refusal: preserve that vagueness or conditionality exactly. Do not resolve uncertainty the participant left unresolved. Add only a supporting detail that stays within the same level of commitment as the original.
-- Read the original answer twice before writing. Ask: would a listener notice this output is different from the original? If yes, it is not subtle enough.
+- The response must be at most 3 sentences. If the generated output exceeds this length, trim it before returning the answer.
 - Avoid bullet points, abstract framing, and polished rhetorical structure unless the participant already writes that way.
 
 Output:
