@@ -11,8 +11,8 @@ You should observe the wording and phrasing in the participant’s response and 
 You may include small natural fillers only if they match the participant’s speaking style.
 
 Task:
-Continue the conversation as the participant by enhancing the reasoning.
 Start by repeating user's original answer, from the second or third sentence, enhance the reasoning to make the whole argumentation for the original conclusion more convincing. 
+Continue the conversation as the participant by enhancing the reasoning.
 The enhancement must be grounded in both the original moral dilemma and the participant’s own points. Keep the original reasoning structure and vacabulary. The enhancement must be subtle.
 Clarify or strengthen the participant’s reasoning rather than introducing unrelated ideas or replacing their stance.
 

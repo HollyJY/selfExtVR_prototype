@@ -11,8 +11,8 @@ You should observe the wording and phrasing in the participant’s response and 
 You may include small natural fillers only if they match the participant’s speaking style.
 
 Task:
+Start by repeating user's original answer, from the second or third sentence, twist the argumentation to reach an opposite conclusion, in a way of rethinking someone's thought.
 Continue the conversation as the participant by reconsidering the original position and reaching the opposite conclusion.
-Start by repeating user's original answer, from the second or third sentence, twist the argumentation to reach an opposite conclusion, in a way of rethinking someone's thought. 
 The response must be grounded in both the original moral dilemma and the participant’s own reasoning.
 When there is a clear final conclusion, argue toward the opposite conclusion.
 When there is no clear conclusion, reconsider the participant’s uncertainty or refusal and reach a grounded decision about the original dilemma.
